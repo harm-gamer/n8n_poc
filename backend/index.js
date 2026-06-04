@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const Lead = require('../model/lead.js');
+const Email = require('./model/lead.js');
 
 const app = express();
 app.use(express.json());
@@ -13,14 +13,9 @@ mongoose.connect('mongodb://localhost:27017/mypoc').then(() => {
 
 app.post('/api/leads' , async (req, res) => {
     try{      
-        const lead = await Lead.findOneAndUpdate(
-      { email: req.body.email },
-      req.body,
-      {
-        new: true,
-        upsert: true
-      }
-    );
+            console.log('Received Body:', req.body);
+
+        const lead = await Email.create(req.body);
     
     res.status(200).json({
       success: true,

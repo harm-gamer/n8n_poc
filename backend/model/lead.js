@@ -1,17 +1,21 @@
 const mongoose = require("mongoose");
 
-const leadSchema = new mongoose.Schema(
+const EmailSchema = new mongoose.Schema(
   {
+    sender: String,
+    receiver: String,
+    subject: String,
     name: String,
     company: String,
     email: {
       type: String,
-      unique: true
+      unique: true,
+      sparse: true
     },
     requirement: String,
     priority: String
   },
   { timestamps: true }
 );
-const Lead = mongoose.model("Lead", leadSchema);
-module.exports =Lead;
+const Email= mongoose.model("email", EmailSchema);
+module.exports =Email;
