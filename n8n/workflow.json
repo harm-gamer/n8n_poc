@@ -1,0 +1,151 @@
+{
+  "name": "Email → OpenAI → MongoDB → Slack",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "gmail-trigger",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageValues": [
+            {
+              "content": "Extract the following information from the email and return ONLY valid JSON.\n\n{\n  \"name\": \"\",\n  \"company\": \"\",\n  \"email\": \"\",\n  \"requirement\": \"\",\n  \"priority\": \"\"\n}\n\nEmail Subject:\n{{$json.subject}}\n\nEmail Body:\n{{$json.textPlain || $json.snippet || $json.textHtml}}"
+            }
+          ]
+        }
+      },
+      "id": "openai-extract",
+      "name": "Extract Lead",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        550,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.message?.content || $json.content || '';\nconst parsed = JSON.parse(raw);\nreturn [{ json: parsed }];"
+      },
+      "id": "parse-json",
+      "name": "Parse AI JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_BACKEND_SERVER:3000/api/leads",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}"
+      },
+      "id": "save-lead",
+      "name": "Save Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1150,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "#sales-leads",
+        "text": "=🚀 New Lead\n\nName: {{$node[\"Parse AI JSON\"].json[\"name\"]}}\nCompany: {{$node[\"Parse AI JSON\"].json[\"company\"]}}\nEmail: {{$node[\"Parse AI JSON\"].json[\"email\"]}}\nRequirement: {{$node[\"Parse AI JSON\"].json[\"requirement\"]}}\nPriority: {{$node[\"Parse AI JSON\"].json[\"priority\"]}}"
+      },
+      "id": "slack-message",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        1450,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack Workspace"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Lead": {
+      "main": [
+        [
+          {
+            "node": "Parse AI JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI JSON": {
+      "main": [
+        [
+          {
+            "node": "Save Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
