@@ -9,7 +9,6 @@ const EmailSchema = new mongoose.Schema(
     company: String,
     email: {
       type: String,
-      unique: true,
       sparse: true
     },
     requirement: String,

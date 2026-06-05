@@ -15,7 +15,14 @@ app.post('/api/leads' , async (req, res) => {
     try{      
             console.log('Received Body:', req.body);
 
-        const lead = await Email.create(req.body);
+       const lead = await Email.findOneAndUpdate(
+  { email: req.body.email },
+  req.body,
+  {
+    upsert: true,
+    new: true
+  }
+);
     
     res.status(200).json({
       success: true,
